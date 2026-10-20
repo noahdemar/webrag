@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Cpath d='M10 9h8l4 4v10H10z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M13 17h6M13 20h4' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>localscrape — private PDF search</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><circle cx="11.5" cy="14.5" r="2.5"/><path d="m13.5 16.5 2 2"/></svg>
+    </span>
+    localscrape
+  </div>
+  <nav>
+    <button class="tab active" data-tab="search">Search</button>
+    <button class="tab" data-tab="library">Library</button>
+  </nav>
+  <div class="header-right">
+    <span class="stats" id="stats"></span>
+    <span id="backend" class="badge" title="Search backend"></span>
+  </div>
+</header>
+
+<main>
+  <section id="view-search" class="view">
+    <div class="hero">
+      <h1>Search inside your documents.</h1>
+      <p>Drop in PDFs or images. Text is extracted and OCR'd right here in your browser. Nothing gets uploaded.</p>
+    </div>
+
+    <div class="search-sticky">
+      <div class="searchbar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="text" spellcheck="false" autocomplete="off"
+               placeholder="Search with words or regex, e.g. invoice|receipt">
+        <label class="toggle" id="ci-wrap" title="Case-insensitive">
+          <input type="checkbox" id="opt-ci"><span>Aa</span>
+        </label>
+        <kbd class="hint" aria-hidden="true">/</kbd>
+      </div>
+      <div class="search-meta">
+        <div class="modes" id="modes" role="tablist" aria-label="Search mode">
+          <button data-mode="regex" title="Exact words or regular expressions">Exact</button>
+          <button data-mode="fuzzy" title="Tolerates typos, OCR errors and broken spacing">Fuzzy</button>
+          <button data-mode="semantic" class="hidden" title="Finds passages by meaning (on-device embedding model)">Semantic</button>
+        </div>
+        <div class="adv">
+          <button id="adv-btn" class="adv-btn" aria-expanded="false" aria-controls="adv-pop">Advanced</button>
+          <div id="adv-pop" class="adv-pop hidden">
+            <label class="switch-row">
+              <input type="checkbox" id="opt-semantic">
+              <span class="switch" aria-hidden="true"></span>
+              <span>
+                <span class="switch-title">Semantic search</span>
+                <span class="switch-sub">Find passages by meaning with an on-device model. Downloads ≈200 MB the first time you enable it.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+        <div id="qstatus" class="qstatus"></div>
+      </div>
+    </div>
+
+    <div id="sem-panel" class="card sem-panel hidden"></div>
+
+    <div id="mapwrap" class="card hidden">
+      <div class="map-head">
+        <span>Pages</span>
+        <span class="legend"><i class="lg-hit"></i>match <i class="lg-parsed"></i>parsed <i class="lg-pending"></i>pending</span>
+      </div>
+      <canvas id="map"></canvas>
+      <div id="maptip" class="hidden"></div>
+    </div>
+
+    <div id="dropzone">
+      <div class="dz-inner">
+        <div class="dz-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+        </div>
+        <div>
+          <div class="dz-title">Drop PDFs or images, or <u>browse</u></div>
+          <div class="dz-sub">Uses the text layer when it's good and falls back to on-device OCR when it isn't</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="queue"></div>
+    <div id="results"></div>
+  </section>
+
+  <section id="view-library" class="view hidden">
+    <div class="lib-head">
+      <div>
+        <h2>Library</h2>
+        <p class="muted" id="lib-usage">Documents persist in this browser (IndexedDB). Export a dump to keep a copy or move machines.</p>
+      </div>
+      <div class="lib-actions">
+        <button id="btn-parquet" class="btn">Export Parquet</button>
+        <button id="btn-export" class="btn">Export dump (.jsonl)</button>
+        <button id="btn-import" class="btn">Import dump</button>
+        <button id="btn-clear" class="btn danger">Clear all</button>
+        <input type="file" id="import-file" accept=".jsonl,.json,.ndjson" hidden>
+      </div>
+    </div>
+    <div class="card table-card">
+      <table id="lib-table">
+        <thead><tr><th>File</th><th class="num">Pages</th><th class="num">Lines</th><th>Mode</th><th>Added</th><th>Status</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="lib-empty" class="empty">No documents yet. Drop some files on the Search tab.</div>
+    </div>
+  </section>
+</main>
+
+<input type="file" id="file-input" accept=".pdf,image/*" multiple hidden>
+<div id="viewer" class="hidden" role="dialog" aria-modal="true" aria-labelledby="v-title">
+  <div class="v-panel">
+    <div class="v-bar">
+      <div class="v-titles">
+        <div id="v-title"></div>
+        <div id="v-sub"></div>
+      </div>
+      <div class="v-actions">
+        <button id="v-prev" class="icon-btn" title="Previous result page (←)" aria-label="Previous result page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button id="v-next" class="icon-btn" title="Next result page (→)" aria-label="Next result page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <button id="v-close" class="icon-btn" title="Close (Esc)" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="v-body">
+      <div id="v-page"><canvas id="v-canvas"></canvas><div id="v-hl"></div></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+samples/
+.DS_Store
+__pycache__/
+*.jsonl
+*.parquet
+.claude/
+# onnxruntime-web 1.30's webgpu bundle only loads the asyncify build
+vendor/ort/ort-wasm-simd-threaded.jsep.*
+vendor/ort/ort-wasm-simd-threaded.jspi.*
+vendor/ort/ort-wasm-simd-threaded.mjs
+vendor/ort/ort-wasm-simd-threaded.wasm
