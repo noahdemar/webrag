@@ -16,10 +16,10 @@ import { Semantic } from "./semantic.js";
 
 const $ = (s) => document.querySelector(s);
 const els = {
-  q: $("#q"), ci: $("#opt-ci"), ciWrap: $("#ci-wrap"), backend: $("#backend"), qstatus: $("#qstatus"),
+  q: $("#q"), ci: $("#opt-ci"), ciWrap: $("#ci-wrap"), qstatus: $("#qstatus"),
   modes: $("#modes"), semPanel: $("#sem-panel"),
   advBtn: $("#adv-btn"), advPop: $("#adv-pop"), optSemantic: $("#opt-semantic"),
-  stats: $("#stats"), queue: $("#queue"), results: $("#results"),
+  queue: $("#queue"), results: $("#results"),
   dropzone: $("#dropzone"), fileInput: $("#file-input"),
   mapwrap: $("#mapwrap"), map: $("#map"), maptip: $("#maptip"),
   libTable: $("#lib-table tbody"), libUsage: $("#lib-usage"),
@@ -128,8 +128,6 @@ function syncGpuDocs() {
 function gpuFailed(e) {
   console.warn("gpu search failed, falling back to js", e);
   gpu = null;
-  els.backend.textContent = "JS";
-  els.backend.classList.add("off");
 }
 
 async function runRegex(src, flags) {
@@ -851,8 +849,6 @@ function setStatus(s) { els.qstatus.textContent = s; }
 function updateStats() {
   const s = store.stats();
   document.body.classList.toggle("has-docs", s.files > 0 || processing.size > 0);
-  els.stats.textContent =
-    `${s.files} file${s.files === 1 ? "" : "s"} · ${s.pages.toLocaleString()} pages · ${s.docs.toLocaleString()} lines`;
 }
 
 function setSemanticAllowed(on) {
@@ -968,8 +964,6 @@ async function boot() {
 
   setStatus("initializing search backend…");
   gpu = await GpuSearch.create();
-  els.backend.textContent = gpu ? "WebGPU" : "JS";
-  els.backend.classList.toggle("off", !gpu);
 
   setStatus("warming OCR engine…");
   try {
