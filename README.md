@@ -1,4 +1,4 @@
-# localscrape
+# Webrag (we brag)
 
 Private, in-browser search for PDFs and scanned images. Drop files in and search them by exact words/regex or fuzzily (optionally by meaning too), then jump to the source page with the match highlighted on the original document. Nothing is uploaded. Parsing, OCR, indexing and search all run on your machine.
 
